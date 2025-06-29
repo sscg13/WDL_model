@@ -1600,11 +1600,11 @@ class movegen {
 
     // Generate pawn moves.
     template <Color::underlying c, MoveGenType mt>
-    static void generatePawnMoves(const Board &board, Movelist &moves, Bitboard pin_d,
+    static void generatePawnMoves(const Board &board, Movelist &moves,
                                   Bitboard pin_hv, Bitboard checkmask, Bitboard occ_enemy);
 
     [[nodiscard]] static std::array<Move, 2> generateEPMove(const Board &board, Bitboard checkmask,
-                                                            Bitboard pin_d, Bitboard pawns_lr,
+                                                            Bitboard pawns_lr,
                                                             Square ep, Color c);
 
     [[nodiscard]] static Bitboard generateKnightMoves(Square sq);
@@ -3470,6 +3470,9 @@ template <Color::underlying c>
     Bitboard bishop_attacks = attacks::bishop(sq) & opp_bishop;
     checks += bool(bishop_attacks);
 
+    Bitboard queen_attacks = attacks::queen(sq) & opp_queen;
+    checks += bool(queen_attacks);
+
     Bitboard rook_attacks = attacks::rook(sq, board.occ()) & opp_rook;
 
     if (rook_attacks) {
@@ -3495,9 +3498,8 @@ template <Color::underlying c>
 [[nodiscard]] inline Bitboard movegen::pinMaskRooks(const Board &board, Square sq, Bitboard occ_opp,
                                                     Bitboard occ_us) {
     const auto opp_rook  = board.pieces(PieceType::ROOK, ~c);
-    const auto opp_queen = board.pieces(PieceType::QUEEN, ~c);
 
-    Bitboard rook_attacks = attacks::rook(sq, occ_opp) & (opp_rook | opp_queen);
+    Bitboard rook_attacks = attacks::rook(sq, occ_opp) & opp_rook;
     Bitboard pin_hv       = 0;
 
     while (rook_attacks) {
@@ -3556,7 +3558,7 @@ template <Color::underlying c>
 }
 
 template <Color::underlying c, movegen::MoveGenType mt>
-inline void movegen::generatePawnMoves(const Board &board, Movelist &moves, Bitboard pin_d,
+inline void movegen::generatePawnMoves(const Board &board, Movelist &moves,
                                        Bitboard pin_hv, Bitboard checkmask, Bitboard occ_opp) {
     // flipped for black
 
@@ -3666,7 +3668,7 @@ inline void movegen::generatePawnMoves(const Board &board, Movelist &moves, Bitb
     const Square ep = board.enpassantSq();
 
     if (ep != Square::NO_SQ) {
-        auto m = generateEPMove(board, checkmask, pin_d, pawns_lr, ep, c);
+        auto m = generateEPMove(board, checkmask, pawns_lr, ep, c);
 
         for (const auto &move : m) {
             if (move != Move::NO_MOVE) moves.add(move);
@@ -3675,7 +3677,7 @@ inline void movegen::generatePawnMoves(const Board &board, Movelist &moves, Bitb
 }
 
 [[nodiscard]] inline std::array<Move, 2> movegen::generateEPMove(const Board &board,
-                                                                 Bitboard checkmask, Bitboard pin_d,
+                                                                 Bitboard checkmask,
                                                                  Bitboard pawns_lr, Square ep,
                                                                  Color c) {
     assert((ep.rank() == Rank::RANK_3 && board.sideToMove() == Color::BLACK) ||
@@ -3711,7 +3713,6 @@ inline void movegen::generatePawnMoves(const Board &board, Movelist &moves, Bitb
          If the pawn is pinned but the en passant square is not on the
          pin mask then the move is illegal.
         */
-        if ((Bitboard::fromSquare(from) & pin_d) && !(pin_d & Bitboard::fromSquare(ep))) continue;
 
         const auto connectingPawns = Bitboard::fromSquare(epPawnSq) | Bitboard::fromSquare(from);
 
@@ -3866,12 +3867,12 @@ inline void movegen::legalmoves(Movelist &movelist, const Board &board, int piec
 
     // Add the moves to the movelist.
     if (pieces & PieceGenType::PAWN) {
-        generatePawnMoves<c, mt>(board, movelist, pin_d, pin_hv, checkmask, occ_opp);
+        generatePawnMoves<c, mt>(board, movelist, pin_hv, checkmask, occ_opp);
     }
 
     if (pieces & PieceGenType::KNIGHT) {
         // Prune knights that are pinned since these cannot move.
-        Bitboard knights_mask = board.pieces(PieceType::KNIGHT, c) & ~(pin_d | pin_hv);
+        Bitboard knights_mask = board.pieces(PieceType::KNIGHT, c) & ~pin_hv;
 
         whileBitboardAdd(movelist, knights_mask,
                          [&](Square sq) { return generateKnightMoves(sq) & movable_square; });
@@ -3925,11 +3926,10 @@ inline bool movegen::isEpSquareValid(const Board &board, Square ep) {
 
     const auto [checkmask, checks] = movegen::checkMask<c>(board, king_sq);
     const auto pin_hv              = movegen::pinMaskRooks<c>(board, king_sq, occ_opp, occ_us);
-    const auto pin_d               = movegen::pinMaskBishops<c>(board, king_sq, occ_opp, occ_us);
 
     const auto pawns    = board.pieces(PieceType::PAWN, stm);
     const auto pawns_lr = pawns & ~pin_hv;
-    const auto m        = movegen::generateEPMove(board, checkmask, pin_d, pawns_lr, ep, stm);
+    const auto m        = movegen::generateEPMove(board, checkmask, pawns_lr, ep, stm);
     bool found          = false;
 
     for (const auto &move : m) {
