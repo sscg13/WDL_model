@@ -192,7 +192,7 @@ class Analyze : public pgn::Visitor {
 
             key.result   = board.sideToMove() == Color::WHITE ? resultkey.white : resultkey.black;
             key.move     = board.fullMoveNumber();
-            key.material = 9 * queens + 5 * rooks + 3 * bishops + 3 * knights + pawns;
+            key.material = 2 * queens + 6 * rooks + bishops + 4 * knights + pawns;
 
             // insert or update the position map
             pos_map.lazy_emplace_l(
