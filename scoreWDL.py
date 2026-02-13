@@ -631,19 +631,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--moveMax",
         type=int,
-        default=120,
+        default=300,
         help="Upper move number limit for filter applied to json data.",
     )
     parser.add_argument(
         "--materialMin",
         type=int,
-        default=17,
+        default=16,
         help="Lower material count limit for filter applied to json data.",
     )
     parser.add_argument(
         "--materialMax",
         type=int,
-        default=78,
+        default=56,
         help="Upper material count limit for filter applied to json data.",
     )
     parser.add_argument(
@@ -661,7 +661,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--momTarget",
         type=int,
-        default=58,
+        default=24,
         help="The polynomials p_a and p_b will be expressed in terms of sum_i c_i (mom/momTarget)^i.",
     )
     parser.add_argument(
@@ -710,7 +710,7 @@ if __name__ == "__main__":
 
     if args.NormalizeToPawnValue is None:
         if args.NormalizeData is None:
-            args.NormalizeData = '{"momType": "material", "momMin": 17, "momMax": 78, "momTarget": 58, "as": [-13.50030198,40.92780883,-36.82753545,386.83004070]}'
+            args.NormalizeData = '{"momType": "material", "momMin": 16, "momMax": 64, "momTarget": 24, "as": [25.31918174, -110.26807200, 128.89604743, 179.29034199]}'
     else:
         assert (
             args.NormalizeData is None
